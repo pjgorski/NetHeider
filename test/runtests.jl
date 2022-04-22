@@ -13,6 +13,7 @@ function initialize_attr()
     attr = [1 1 1;
         1 1 3; 
         1 1 2]
+    attr = Float64.(attr)
     signs = sign.(Symmetric(get_attribute_layer_weights(attribute, attr)))
     net = generate_complete_network(3)
     triads = get_undir_triads(net)
@@ -221,4 +222,11 @@ end
         @test sum(abs.(type_trans)) == 0
         @test sum(abs.(bal_unbal)) == 0
     end
+end
+
+@testset "simulation repetitions" begin
+    params = Params(; N=10)
+    # p = (attr=zeros(params.N, params.attr.g), signs=zeros(params.N, params.N), signs_old = zeros(params.N, params.N), new_attr=zeros(params.N, params.attr.g), hlp=zeros(params.N, params.N), adj_mat=Matrix(adjacency_matrix(net, Float64)))
+
+    performSimulationRepetitions(params; savefolder = "test")
 end

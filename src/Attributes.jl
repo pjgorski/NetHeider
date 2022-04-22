@@ -56,7 +56,7 @@ get_attributes(b::BinaryAttributes, n::Int) = sign.(rand(n, b.g) .- 0.5)
 export get_attributes
 
 #Returns the Array of attributes of type (Un)OrderedAttributes (attributes are 1, 2, ..., v)
-get_attributes(b::AbstractAttributes, n::Int) = rand(1:b.v, n, b.g)
+get_attributes(b::AbstractAttributes, n::Int) = rand(1.:b.v, n, b.g)
 export get_attributes
 
 #Returns weights of the AL in the case of BinaryAttributes
@@ -158,4 +158,13 @@ get_degeneracy(b::AbstractAttributes) = b.v
 get_degeneracy(b::BinaryAttributes) = 2
 export get_degeneracy
 
-# end
+function are_attributes_correct(b::AbstractAttributes, attr::AbstractArray{<:Number})
+    if any(attr .< 1)
+        return false
+    elseif any(attr .> b.v)
+        return false
+    else
+        return true
+    end
+end
+export are_attributes_correct

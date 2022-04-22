@@ -90,6 +90,7 @@ function generate_network_structure(params::Params)
         return generate_NetSenseNetwork()
     end
 end
+export generate_network_structure
 
 # Returns triads of given network. 
 function get_undir_triads(net)

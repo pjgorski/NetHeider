@@ -63,13 +63,13 @@ end
 export Params
 
 function Params(;
-    attr_type = BinaryAttributes,
-    attr_params = [5],
+    attr_type = OrderedAttributes,
+    attr_params = [5, 0.5, 2], 
     N = 3,
     net_str = "complete",
-    pr_neg = 0.5,
-    pr_pos = 0.5,
-    padd = 0.5,
+    pr_neg = 0.1,
+    pr_pos = 0.1,
+    padd = 0.1,
     pn = 0.5,
     const_rate_flag = false,
     add_edges = add_single_edge!,

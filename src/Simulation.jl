@@ -7,7 +7,7 @@ DrWatson.default_prefix(params::Params) = "Experiment_" * string(params.date)
 DrWatson.default_allowed(::Params) = (Real, String, AbstractAttributes)
 DrWatson.allaccess(::Params) = (:attr, :N, :pr_neg, :pr_pos, :padd, :pn, :net_str)
 
-function single_update(params::Params, attr::Matrix{Int}, signs::Matrix{Float64}, triads, net)
+function single_update(params::Params, attr::Matrix{Float64}, signs::Matrix{Float64}, triads, net)
     if length(triads) == 0
         return attr, signs, triads
     end
@@ -59,6 +59,13 @@ function single_update(params::Params, attr::Matrix{Int}, signs::Matrix{Float64}
                 attr_inds = findall(attr[agent_1, :] .!= attr[agent_2, :])
             end
 
+            if length(attr_inds) == 0
+                display(attr)
+                display(triad)
+                display(v)
+                display(dif)
+                display((agent_1, agent_2))
+            end
             attr_ind = rand(attr_inds)
             if signs[change_link...] > 0 #this link is positive. We want to make it negative
 
@@ -79,10 +86,23 @@ function single_update(params::Params, attr::Matrix{Int}, signs::Matrix{Float64}
 
             attr[agent_1, attr_ind] = rand(possible_new_vals)
             signs = sign.(Symmetric(get_attribute_layer_weights(params.attr, attr)))
+
+            if !are_attributes_correct(params.attr, attr)
+                display(attr)
+                display(triad)
+                display(v)
+                display(dif)
+                display((agent_1, agent_2))
+                display(attr_inds)
+                display(attr_ind)
+                display(possible_new_vals)
+                error("wrong attributes!")
+            end
         end
     end
     return attr, signs, triads, net
 end
+export single_update
 
 #add a link with rate padd
 #TODO I dont like it, because no new triads will be added
@@ -94,6 +114,9 @@ function add_single_edge!(net, params::Params;
 
         if sum(1.0 .- hlp.adj_mat) - params.N < 0.5 * params.N^2
             possible_edges = findall(triu(1.0 .- hlp.adj_mat, 1) .== 1)
+            if length(possible_edges) == 0
+                return 
+            end
             chosen_edge = rand(possible_edges).I
         else
             chosen_edge = rand(1:params.N, 2)
@@ -125,14 +148,14 @@ function add_edges!(net, params::Params;
 end
 export add_edges!
 
-# p = (attr = zeros(params.N, params.attr.g), weights = zeros(params.N, params.N), signs = zeros(params.N, params.N), new_attr = zeros(params.N, params.attr.g), weights_row = zeros(params.N), signs_row = zeros(params.N), alpha_mod = zeros(params.N), hlp = zeros(params.N, params.N), adj_mat = Matrix(adjacency_matrix(net, Float64)))
-# balanced = zeros(Int(ceil(params.step_max / params.measure_balance_every_step)))
-function performSimulation!(balanced, params::Params, net=generate_network_structure(params); triads=get_undir_triads(net),
+# p = (attr=zeros(params.N, params.attr.g), signs=zeros(params.N, params.N), signs_old = zeros(params.N, params.N), new_attr=zeros(params.N, params.attr.g), hlp=zeros(params.N, params.N), adj_mat=Matrix(adjacency_matrix(net, Float64)))
+# res = (balanced = zeros(Int(ceil(params.step_max / params.measure_balance_every_step))), triad_trans = zeros(Int(ceil(params.step_max / params.measure_balance_every_step)), 4, 4), bal_unbal = zeros(Int(ceil(params.step_max / params.measure_balance_every_step)), 2, 2))
+function performSimulation!(res, params::Params, net=generate_network_structure(params); triads=get_undir_triads(net),
     p=(attr=zeros(params.N, params.attr.g),
-        signs=zeros(params.N, params.N), signs_old = copy(signs), new_attr=zeros(params.N, params.attr.g),
+        signs=zeros(params.N, params.N), signs_old = zeros(params.N, params.N), new_attr=zeros(params.N, params.attr.g),
         hlp=zeros(params.N, params.N), adj_mat=Matrix(adjacency_matrix(net, Float64)))
 )
-    attr, signs, new_attr, hlp, adj_mat = p
+    attr, signs, signs_old, new_attr, hlp, adj_mat = p
     #generate network
     # net = generate_network_structure(params)
 
@@ -147,15 +170,14 @@ function performSimulation!(balanced, params::Params, net=generate_network_struc
 
     #prepare result tables
     # balanced = zeros(Int(ceil(params.step_max / params.measure_balance_every_step)))
+    signs_old .= copy(signs)
+    triads_old = copy(triads)
 
     measure_balance_counter = 1
     measure_balance_index = 1
 
     #run Dynamics
-    changes = 0
     for i in 1:params.step_max
-        signs_old .= copy(signs)
-        triads_old = copy(triads)
         #update triad
         attr, signs, triads, net = single_update(params, attr, signs, triads, net)
 
@@ -165,7 +187,14 @@ function performSimulation!(balanced, params::Params, net=generate_network_struc
 
         if measure_balance_counter >= params.measure_balance_every_step
             #measure and store the level of balance
-            balanced[measure_balance_index] = get_balanced_ratio_not_complete(signs .* adj_mat, adj_mat; hlp=hlp)
+            adj_mat .= Matrix(adjacency_matrix(net, Float64))
+            res.balanced[measure_balance_index] = get_balanced_ratio_not_complete(signs .* adj_mat, adj_mat; hlp=hlp)
+
+            res.triad_trans[measure_balance_index, :, :], 
+                res.bal_unbal[measure_balance_index, :, :] = calculate_triad_transitions(signs_old, signs, triads_old, triads)
+            signs_old .= copy(signs)
+            triads_old = copy(triads)
+
             measure_balance_index += 1
             measure_balance_counter = 1
         else
@@ -173,37 +202,25 @@ function performSimulation!(balanced, params::Params, net=generate_network_struc
         end
     end
 
-    if measure_balance_index < size(balanced, 1)
-        balanced[measure_balance_index] = get_balanced_ratio_not_complete(signs .* adj_mat, adj_mat; hlp=hlp)
+    if measure_balance_index < size(res.balanced, 1)
+        res.balanced[measure_balance_index] = get_balanced_ratio_not_complete(signs .* adj_mat, adj_mat; hlp=hlp)
+        res.triad_trans[measure_balance_index, :, :], 
+            res.bal_unbal[measure_balance_index, :, :] = calculate_triad_transitions(signs_old, signs, triads_old, triads)
         measure_balance_index += 1
     end
 
     # print(changes)
 
-    return balanced, changes
-    # #save results
-
-    # plp = Array{Float64,1}(undef, params.repetitions)
-    # ND = params.N * (params.N - 1) * (params.N - 2) / 6
-
-    # for i = 1:params.repetitions
-    #     plp[i] = get_random_polarization(params; attr = attr, weights = weights, triads = triads, ND = ND)
-    # end
-
-    # #save Results
-    # @tagsave(
-    #     datadir("sims", savename(params, "jld2")),
-    #     @strdict params plp
-    # )
+    return res
 end
 export performSimulation!
 
 function performSimulationRepetitions(params::Params; p=(attr=zeros(params.N, params.attr.g),
-        weights=zeros(params.N, params.N), signs=zeros(params.N, params.N), new_attr=zeros(params.N, params.attr.g),
-        weights_row=zeros(params.N), signs_row=zeros(params.N), alpha_mod=zeros(params.N), hlp=zeros(params.N, params.N)),
-    savefolder="")
+    signs=zeros(params.N, params.N), signs_old = zeros(params.N, params.N), new_attr=zeros(params.N, params.attr.g),
+    hlp=zeros(params.N, params.N)),
+    savefolder=["data","sims"])
 
-    attr, weights, signs, new_attr, weights_row, signs_row, alpha_mod, hlp = p
+    attr, signs, signs_old, new_attr, hlp = p
 
     #generate network
     #Assuming the network topology is not random!
@@ -216,22 +233,51 @@ function performSimulationRepetitions(params::Params; p=(attr=zeros(params.N, pa
     balanced_mean = zeros(Int(ceil(params.step_max / params.measure_balance_every_step)))
     balanced_std = zeros(Int(ceil(params.step_max / params.measure_balance_every_step)))
 
+    trans_table = zeros(params.repetitions, Int(ceil(params.step_max / params.measure_balance_every_step)), 4, 4)
+    bal_unbal_table = zeros(params.repetitions, Int(ceil(params.step_max / params.measure_balance_every_step)), 2, 2)
+    trans_mean = zeros(Int(ceil(params.step_max / params.measure_balance_every_step)), 4, 4)
+    trans_std = zeros(Int(ceil(params.step_max / params.measure_balance_every_step)), 4, 4)
+    bu_mean = zeros(Int(ceil(params.step_max / params.measure_balance_every_step)), 2, 2)
+    bu_std = zeros(Int(ceil(params.step_max / params.measure_balance_every_step)), 2, 2)
+
     for rep in 1:params.repetitions
         #run dynamics
         bal_row = @view balanced_table[rep, :]
-        performSimulation!(bal_row, params, net; p=p)
+        trans_row = view(trans_table, rep, :, :, :)
+        bal_unbal_row = view(bal_unbal_table, rep, :, :, :)
+
+        performSimulation!((balanced = bal_row, triad_trans = trans_row, bal_unbal = bal_unbal_row), params, net; p=p)
     end
 
     balanced_mean .= mean(balanced_table, dims=1)[:]
     balanced_std .= std(balanced_table, dims=1)[:]
 
+    trans_mean .= mean(trans_table, dims=1)[1,:,:,:]
+    trans_std .= std(trans_table, dims=1)[1,:,:,:]
+
+    bu_mean .= mean(bal_unbal_table, dims=1)[1,:,:,:]
+    bu_std .= std(bal_unbal_table, dims=1)[1,:,:,:]
+
+    bal2bal_mean = bu_mean[:,1,1] ./ sum(bu_mean[:,1,:], dims=2)
+    unbal2bal_mean = bu_mean[:,2,1] ./ sum(bu_mean[:,2,:], dims=2)
+
     last_val = balanced_mean[end]
     last_std = balanced_std[end]
 
+    what_to_save = @strdict params balanced_table balanced_mean balanced_std last_val last_std trans_table trans_mean trans_std bal_unbal_table bu_mean bu_std bal2bal_mean unbal2bal_mean
+    for field in fieldnames(typeof(params))
+        val = getfield(params, field)
+        what_to_save[String(field)] = val
+    end
+
+    if !isa(savefolder, Array)
+        savefolder = [savefolder]
+    end
+
     #saving Results
     @tagsave(
-        datadir("sims", savefolder, savename(params, "jld2")),
-        @strdict params balanced_table balanced_mean balanced_std last_val last_std
+        projectdir(savefolder..., savename(params, "jld2")),
+        what_to_save
     )
 
     return balanced_table, balanced_mean, balanced_std, last_val, last_std
