@@ -1,7 +1,15 @@
 name = "NetHeider"
 authors = ["Piotr J Górski"]
-[compat]
-julia = "1.6.4"
-DrWatson = "2.9.0"
+
 [deps]
+Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
 DrWatson = "634d3b9d-ee7a-5ddf-bec9-22491ea816e1"
+LightGraphs = "093fc24a-ae57-5d10-9952-331d41423f4d"
+LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+PyCall = "438e738f-606a-5dbb-bf0a-cddfbfd45ab0"
+SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
+StatsBase = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"
+
+[compat]
+DrWatson = "2.9.0"
+julia = "1.6.4"
