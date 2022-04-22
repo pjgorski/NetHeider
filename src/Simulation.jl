@@ -78,6 +78,7 @@ function single_update(params::Params, attr::Matrix{Int}, signs::Matrix{Float64}
             end
 
             attr[agent_1, attr_ind] = rand(possible_new_vals)
+            signs = sign.(Symmetric(get_attribute_layer_weights(params.attr, attr)))
         end
     end
     return attr, signs, triads, net
@@ -128,19 +129,19 @@ export add_edges!
 # balanced = zeros(Int(ceil(params.step_max / params.measure_balance_every_step)))
 function performSimulation!(balanced, params::Params, net=generate_network_structure(params); triads=get_undir_triads(net),
     p=(attr=zeros(params.N, params.attr.g),
-        weights=zeros(params.N, params.N), signs=zeros(params.N, params.N), new_attr=zeros(params.N, params.attr.g),
-        weights_row=zeros(params.N), signs_row=zeros(params.N), alpha_mod=zeros(params.N), hlp=zeros(params.N, params.N), adj_mat=Matrix(adjacency_matrix(net, Float64)))
+        signs=zeros(params.N, params.N), signs_old = copy(signs), new_attr=zeros(params.N, params.attr.g),
+        hlp=zeros(params.N, params.N), adj_mat=Matrix(adjacency_matrix(net, Float64)))
 )
-    attr, weights, signs, new_attr, weights_row, signs_row, alpha_mod, hlp, adj_mat = p
+    attr, signs, new_attr, hlp, adj_mat = p
     #generate network
     # net = generate_network_structure(params)
 
     #generate attributes
     attr .= get_attributes(params.attr, params.N)
-    weights .= Symmetric(get_attribute_layer_weights(params.attr, attr))
+    # weights .= Symmetric(get_attribute_layer_weights(params.attr, attr))
 
     #generate signed connections (Jij)
-    signs .= sign.(weights)
+    signs .= sign.(Symmetric(get_attribute_layer_weights(params.attr, attr)))
 
     new_attr .= attr
 
@@ -153,11 +154,14 @@ function performSimulation!(balanced, params::Params, net=generate_network_struc
     #run Dynamics
     changes = 0
     for i in 1:params.step_max
+        signs_old .= copy(signs)
+        triads_old = copy(triads)
         #update triad
         attr, signs, triads, net = single_update(params, attr, signs, triads, net)
 
         #add a link with rate padd
         params.add_edges(net, params; hlp=p)
+        triads = get_undir_triads(net)
 
         if measure_balance_counter >= params.measure_balance_every_step
             #measure and store the level of balance

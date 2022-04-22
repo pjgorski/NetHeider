@@ -165,7 +165,7 @@ export get_correlation
 # Returns: 
 # * transition Matrix Delta[i,j] indicates the number of times triad of type (i-1) became a triad of type (j-1)
 # * transition Matrix of (balanced, unbalanced). 
-function calculate_triad_transitions(xs_old::Matrix{Float64}, xs_new::Matrix{Float64}, triads_old, triads_new; hlp=zeros(size(xs))) 
+function calculate_triad_transitions(xs_old::Matrix{Float64}, xs_new::Matrix{Float64}, triads_old, triads_new) 
     Deltas = zeros(4,4)
     bal_unbal = zeros(2,2)
     for triad in triads_old
@@ -184,9 +184,10 @@ function calculate_triad_transitions(xs_old::Matrix{Float64}, xs_new::Matrix{Flo
         negs_old_ind = sum(triad_links_old .== -1) + 1
         negs_new_ind = sum(triad_links_new .== -1) + 1
 
-        Deltas[negs_old_ind, is_balanced_new_ind] += 1
+        Deltas[negs_old_ind, negs_new_ind] += 1
     end
 
     return Deltas, bal_unbal
 end
+export calculate_triad_transitions
 # end

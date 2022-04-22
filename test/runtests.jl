@@ -119,3 +119,106 @@ end
         @test net == cmpl
     end
 end
+
+@testset "calculating triad transitions" begin
+    @testset "Delta1 -> Delta 0" begin
+        params, attr, signs, triads, net = initialize_attr()
+
+        params.pr_pos = 0.
+        params.pr_neg = 0.
+        params.pn = 1.
+
+        signs_old = copy(signs)
+
+        attr, signs, triads, net = NetHeider.single_update(params, attr, signs, triads, net)
+
+        type_trans, bal_unbal = NetHeider.calculate_triad_transitions(signs_old, signs, triads, triads)
+
+        @test sum(abs.(type_trans)) == 1
+        @test type_trans[2,1] == 1
+        @test sum(abs.(bal_unbal)) == 1
+        @test bal_unbal[2,1] == 1
+    end
+
+    @testset "Delta1 -> (Delta2,Delta3)" begin
+        params, attr, signs, triads, net = initialize_attr()
+
+        params.pr_pos = 0.
+        params.pr_neg = 0.
+        params.pn = 0.
+
+        signs_old = copy(signs)
+
+        possible_sum_of_signs = [-2, -6]
+        was_observed = [false, false]
+
+        for _ in 1:100
+            _, attr, signs, triads, net = initialize_attr()
+            attr, signs, triads, net = NetHeider.single_update(params, attr, signs, triads, net)
+
+            @test sum(signs) in possible_sum_of_signs
+
+            ind = findfirst(sum(signs) .== possible_sum_of_signs)
+            if !was_observed[ind]
+                was_observed[ind] = true
+                type_trans, bal_unbal = NetHeider.calculate_triad_transitions(signs_old, signs, triads, triads)
+
+                if ind == 1
+                    @test sum(abs.(type_trans)) == 1
+                    @test type_trans[2,3] == 1
+                    @test sum(abs.(bal_unbal)) == 1
+                    @test bal_unbal[2,1] == 1
+                else
+                    @test sum(abs.(type_trans)) == 1
+                    @test type_trans[2,4] == 1
+                    @test sum(abs.(bal_unbal)) == 1
+                    @test bal_unbal[2,2] == 1
+                end
+            end
+        end
+    end
+
+    @testset "triad vanishes" begin
+        params, attr, signs, triads, net = initialize_attr()
+
+        params.pr_pos = 1.
+        params.pr_neg = 1.
+        params.pn = 0.5
+
+        signs_old = copy(signs)
+        triads_old = copy(triads)
+
+        attr, signs, triads, net = NetHeider.single_update(params, attr, signs, triads, net)
+
+        type_trans, bal_unbal = NetHeider.calculate_triad_transitions(signs_old, signs, triads_old, triads)
+
+        @test sum(abs.(type_trans)) == 0
+        @test sum(abs.(bal_unbal)) == 0
+    end
+
+    @testset "triad appears" begin
+        params, attr, signs, triads, net = initialize_attr()
+
+        #connection will be surely removed
+        params.pr_neg = 1.
+        params.pr_pos = 1.
+        attr, signs, triads, net = NetHeider.single_update(params, attr, signs, triads, net)
+        
+        signs_old = copy(signs)
+        triads_old = copy(triads)
+
+        params.padd = 1.
+        NetHeider.add_single_edge!(net, params)
+        triads = get_undir_triads(net)
+
+        #connection will be surely stay
+        params.pr_neg = 0.
+        params.pr_pos = 0.
+        attr, signs, triads, net = NetHeider.single_update(params, attr, signs, triads, net)
+
+        type_trans, bal_unbal = NetHeider.calculate_triad_transitions(signs_old, signs, triads_old, triads)
+
+        @test sum(abs.(type_trans)) == 0
+        @test sum(abs.(bal_unbal)) == 0
+    end
+end
