@@ -26,6 +26,9 @@ mutable struct Params <: AbstractParams
     "Dynamics parameter. Rate of adding a link"
     padd::Float64
 
+    "Dynamics parameter. Probability of closing a triad rather than adding a random link. "
+    pclose_triad::Float64
+
     "Dynamics parameter. ABLTD parameter p"
     pn::Float64
 
@@ -70,9 +73,10 @@ function Params(;
     pr_neg = 0.1,
     pr_pos = 0.1,
     padd = 0.1,
+    pclose_triad = 0.,
     pn = 0.5,
     const_rate_flag = false,
-    add_edges = add_single_edge!,
+    add_edges = add_single_edge2!,
     step_max = 1000,
     measure_balance_every_step = 10,
     repetitions = 100,
@@ -89,6 +93,7 @@ function Params(;
         pr_neg,
         pr_pos,
         padd,
+        pclose_triad,
         pn,
         const_rate_flag,
         add_edges,

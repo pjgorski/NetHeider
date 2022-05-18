@@ -116,3 +116,25 @@ function get_undir_triads(net)
     return triads
 end
 export get_undir_triads
+
+function get_wedges_single_edges(A)
+    N = size(A)[1]
+
+    wedges = []
+    single_edges = []
+
+    for i in 1:N
+        for j in (i+1):N
+            for k in (j+1):N
+                if A[i,k] + A[j,k] + A[i,j] == 2
+                    push!(wedges, (i,j,k))
+                elseif A[i,k] + A[j,k] + A[i,j] == 1
+                    push!(single_edges, (i,j,k))
+                end
+            end
+        end
+    end
+    
+    return wedges, single_edges
+end
+export get_wedges_single_edges

@@ -129,6 +129,42 @@ function add_single_edge!(net, params::Params;
 end
 export add_single_edge!
 
+# adds one link with prob padd. With prob pclose_triad this link closes a triad. 
+function add_single_edge2!(net, params::Params;
+        hlp=(adj_mat=Matrix(adjacency_matrix(net, Float64)),))
+
+    if rand() < params.padd
+        hlp.adj_mat .= Matrix(adjacency_matrix(net, Float64))
+        if rand() < params.pclose_triad
+            wedges_t, _ = get_wedges_single_edges(hlp.adj_mat)
+            wedge = rand(wedges_t)
+            if hlp.adj_mat[wedge[1], wedge[2]] == 0
+                chosen_edge = wedge[1], wedge[2]
+            elseif hlp.adj_mat[wedge[1], wedge[3]] == 0
+                chosen_edge = wedge[1], wedge[3]
+            else chosen_edge = wedge[2], wedge[3]
+            end
+        else
+            if sum(1.0 .- hlp.adj_mat) - params.N < 0.5 * params.N^2
+                possible_edges = findall(triu(1.0 .- hlp.adj_mat, 1) .== 1)
+                if length(possible_edges) == 0
+                    return 
+                end
+                chosen_edge = rand(possible_edges).I
+            else
+                chosen_edge = rand(1:params.N, 2)
+                while has_edge(net, chosen_edge...) || chosen_edge[1] == chosen_edge[2]
+                    chosen_edge = rand(1:params.N, 2)
+                end
+            end
+            add_edge!(net, chosen_edge...)
+
+            hlp.adj_mat .= Matrix(adjacency_matrix(net, Float64))
+        end
+    end
+end
+export add_single_edge2!
+
 #each unconnected pair is connected with prob padd
 #TODO I dont like it, because no new triads will be added
 function add_edges!(net, params::Params;
