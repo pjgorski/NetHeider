@@ -106,7 +106,7 @@ function single_update(params::Params, attr::Matrix{Float64}, signs::Matrix{Floa
             end
         end
     end
-    return attr, signs, triads, net
+    return attr, signs, triads, net, is_balanced
 end
 export single_update
 
@@ -231,11 +231,13 @@ function performSimulation!(res, params::Params, net=generate_network_structure(
         #update triad
         # print("u")
         # print(net.ne)
-        attr, signs, triads, net = single_update(params, attr, signs, triads, net)
+        attr, signs, triads, net, was_triad_balanced = single_update(params, attr, signs, triads, net)
         # print("a")
-        #add a link with rate padd
-        params.add_edges(net, params; hlp=p)
-        triads = get_undir_triads(net)
+        if params.const_rate_flag || !was_triad_balanced
+            #add a link with rate padd
+            params.add_edges(net, params; hlp=p)
+            triads = get_undir_triads(net)
+        end
 
         if measure_balance_counter >= params.measure_balance_every_step
             #measure and store the level of balance
