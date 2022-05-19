@@ -62,33 +62,34 @@ function single_update(params::Params, attr::Matrix{Float64}, signs::Matrix{Floa
             end
 
             if length(attr_inds) == 0
-                display(attr)
-                display(triad)
-                display(v)
-                display(dif)
-                display((agent_1, agent_2))
-            end
-            attr_ind = rand(attr_inds)
-            if signs[change_link...] > 0 #this link is positive. We want to make it negative
+                # display(attr)
+                # display(triad)
+                # display(v)
+                # display(dif)
+                # display((agent_1, agent_2))
+            else
+                attr_ind = rand(attr_inds)
+                if signs[change_link...] > 0 #this link is positive. We want to make it negative
 
-                if dif[attr_ind] == 0
-                    if attr[agent_1, attr_ind] == 1
-                        possible_new_vals = [attr[agent_1, attr_ind] + 1]
-                    elseif attr[agent_1, attr_ind] == v
-                        possible_new_vals = [attr[agent_1, attr_ind] - 1]
+                    if dif[attr_ind] == 0
+                        if attr[agent_1, attr_ind] == 1
+                            possible_new_vals = [attr[agent_1, attr_ind] + 1]
+                        elseif attr[agent_1, attr_ind] == v
+                            possible_new_vals = [attr[agent_1, attr_ind] - 1]
+                        else
+                            possible_new_vals = [attr[agent_1, attr_ind] - 1, attr[agent_1, attr_ind] + 1]
+                        end
                     else
-                        possible_new_vals = [attr[agent_1, attr_ind] - 1, attr[agent_1, attr_ind] + 1]
+                        possible_new_vals = [attr[agent_1, attr_ind] + sign(dif[attr_ind])]
                     end
-                else
-                    possible_new_vals = [attr[agent_1, attr_ind] + sign(dif[attr_ind])]
+                else #this link is negative. We want to make it positive
+                    possible_new_vals = [attr[agent_1, attr_ind] - sign(dif[attr_ind])]
                 end
-            else #this link is negative. We want to make it positive
-                possible_new_vals = [attr[agent_1, attr_ind] - sign(dif[attr_ind])]
-            end
 
-            attr[agent_1, attr_ind] = rand(possible_new_vals)
-            signs = sign.(Symmetric(get_attribute_layer_weights(params.attr, attr)))
-            signs[signs .== 0.] .= 1
+                attr[agent_1, attr_ind] = rand(possible_new_vals)
+                signs = sign.(Symmetric(get_attribute_layer_weights(params.attr, attr)))
+                signs[signs .== 0.] .= 1
+            end
 
             if !are_attributes_correct(params.attr, attr)
                 display(attr)
