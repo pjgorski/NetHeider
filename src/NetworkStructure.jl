@@ -78,7 +78,7 @@ const netSenseNetwork, netSenseAttributes = begin
 end
 
 function generate_NetSenseNetwork()
-    return netSenseNetwork
+    return copy(netSenseNetwork)
 end
 
 function generate_network_structure(params::Params)
@@ -87,6 +87,8 @@ function generate_network_structure(params::Params)
     elseif params.net_str == "ring"
         return generate_ring_network(params.N, params.net_str_param)
     elseif params.net_str == "NetSense"
+        params.N = length(netSenseNetwork.fadjlist)
+        params.attr = OrderedAttributes(8, params.attr.threshold, 3)
         return generate_NetSenseNetwork()
     end
 end

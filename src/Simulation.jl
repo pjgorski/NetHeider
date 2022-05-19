@@ -40,6 +40,7 @@ function single_update(params::Params, attr::Matrix{Float64}, signs::Matrix{Floa
 
             triads = get_undir_triads(net)
         else #change attribute
+            old_attr = deepcopy(attr)
             #choose agent
             ind_1 = rand(1:2)
             agent_1 = change_link[ind_1]
@@ -50,10 +51,11 @@ function single_update(params::Params, attr::Matrix{Float64}, signs::Matrix{Floa
             dif = attr[agent_1, :] .- attr[agent_2, :]
             if signs[change_link...] > 0 #this link is positive. We want to make it negative
                 #find set of not completely different attributes
-                attr_inds = findall(abs.(dif) .!= v - 1)
+                # attr_inds = findall(abs.(dif) .!= v - 1)
 
-                #exclude attributes that cannot become more different (for instance attribute 1 cannot become smaller)
-                attr_inds = [attr_ind for (i, attr_ind) in enumerate(attr_inds) if dif[i] == 0 || (attr[agent_1, attr_ind] != 1 && attr[agent_1, attr_ind] != v)]
+                # #exclude attributes that cannot become more different (for instance attribute 1 cannot become smaller)
+                # attr_inds = [attr_ind for (i, attr_ind) in enumerate(attr_inds) if dif[i] == 0 || (attr[agent_1, attr_ind] != 1 && attr[agent_1, attr_ind] != v)]
+                attr_inds = [i for i in 1:length(dif) if dif[i] == 0 || (attr[agent_1, i] != 1 && attr[agent_1, i] != v)]
             else #this link is negative. We want to make it positive
                 #find set of not the same attributes
                 attr_inds = findall(attr[agent_1, :] .!= attr[agent_2, :])
@@ -96,6 +98,10 @@ function single_update(params::Params, attr::Matrix{Float64}, signs::Matrix{Floa
                 display(attr_inds)
                 display(attr_ind)
                 display(possible_new_vals)
+                display(attr[[agent_1, agent_2], :])
+                display(old_attr[[agent_1, agent_2], :])
+                display(net)
+                display(length(triads))
                 error("wrong attributes!")
             end
         end
@@ -186,17 +192,25 @@ export add_edges!
 
 # p = (attr=zeros(params.N, params.attr.g), signs=zeros(params.N, params.N), signs_old = zeros(params.N, params.N), new_attr=zeros(params.N, params.attr.g), hlp=zeros(params.N, params.N), adj_mat=Matrix(adjacency_matrix(net, Float64)))
 # res = (balanced = zeros(Int(ceil(params.step_max / params.measure_balance_every_step))), triad_trans = zeros(Int(ceil(params.step_max / params.measure_balance_every_step)), 4, 4), bal_unbal = zeros(Int(ceil(params.step_max / params.measure_balance_every_step)), 2, 2))
-function performSimulation!(res, params::Params, net=generate_network_structure(params); triads=get_undir_triads(net),
+function performSimulation!(res, params::Params, net=generate_network_structure(params); triads = [],
     p=(attr=zeros(params.N, params.attr.g),
         signs=zeros(params.N, params.N), signs_old = zeros(params.N, params.N), new_attr=zeros(params.N, params.attr.g),
-        hlp=zeros(params.N, params.N), adj_mat=Matrix(adjacency_matrix(net, Float64)))
+        hlp=zeros(params.N, params.N), adj_mat = zeros(params.N, params.N))
 )
+    if isempty(triads) 
+        triads=get_undir_triads(net)
+    end
+    if isempty(p.adj_mat)
+        p.adj_mat .= Matrix(adjacency_matrix(net, Float64))
+    end
     attr, signs, signs_old, new_attr, hlp, adj_mat = p
-    #generate network
-    # net = generate_network_structure(params)
-
+    
     #generate attributes
-    attr .= get_attributes(params.attr, params.N)
+    if params.net_str == "NetSense"
+        attr .= NetHeider.netSenseAttributes
+    else
+        attr .= get_attributes(params.attr, params.N)
+    end
     # weights .= Symmetric(get_attribute_layer_weights(params.attr, attr))
 
     #generate signed connections (Jij)
@@ -215,8 +229,10 @@ function performSimulation!(res, params::Params, net=generate_network_structure(
     #run Dynamics
     for i in 1:params.step_max
         #update triad
+        # print("u")
+        # print(net.ne)
         attr, signs, triads, net = single_update(params, attr, signs, triads, net)
-
+        # print("a")
         #add a link with rate padd
         params.add_edges(net, params; hlp=p)
         triads = get_undir_triads(net)
@@ -261,7 +277,6 @@ function performSimulationRepetitions(params::Params; p=(attr=zeros(params.N, pa
     #generate network
     #Assuming the network topology is not random!
     net = generate_network_structure(params)
-
     p = (p..., adj_mat=Matrix(adjacency_matrix(net, Float64)))
 
     #prepare result tables
@@ -277,6 +292,10 @@ function performSimulationRepetitions(params::Params; p=(attr=zeros(params.N, pa
     bu_std = zeros(Int(ceil(params.step_max / params.measure_balance_every_step)), 2, 2)
 
     for rep in 1:params.repetitions
+        # display("Started " * string(rep))
+        net = generate_network_structure(params)
+        p.adj_mat .= Matrix(adjacency_matrix(net, Float64))
+
         #run dynamics
         bal_row = @view balanced_table[rep, :]
         trans_row = view(trans_table, rep, :, :, :)
