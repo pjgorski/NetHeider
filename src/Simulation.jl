@@ -324,7 +324,7 @@ function performSimulationRepetitions(params::Params; p=(attr=zeros(params.N, pa
     last_val = balanced_mean[end]
     last_std = balanced_std[end]
 
-    what_to_save = @strdict params balanced_table balanced_mean balanced_std last_val last_std trans_table trans_mean trans_std bal_unbal_table bu_mean bu_std bal2bal_mean unbal2bal_mean
+    what_to_save = @strdict params params.attr.threshold balanced_table balanced_mean balanced_std last_val last_std trans_table trans_mean trans_std bal_unbal_table bu_mean bu_std bal2bal_mean unbal2bal_mean
     for field in fieldnames(typeof(params))
         val = getfield(params, field)
         what_to_save[String(field)] = val
@@ -335,7 +335,7 @@ function performSimulationRepetitions(params::Params; p=(attr=zeros(params.N, pa
     end
 
     #saving Results
-    @tagsave(
+    savesafe(
         projectdir(savefolder..., savename(params, "jld2")),
         what_to_save
     )
