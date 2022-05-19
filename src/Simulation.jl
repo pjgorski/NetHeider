@@ -335,7 +335,7 @@ function performSimulationRepetitions(params::Params; p=(attr=zeros(params.N, pa
         what_to_save
     )
 
-    return balanced_table, balanced_mean, balanced_std, last_val, last_std
+    return balanced_table, balanced_mean, balanced_std, last_val, last_std, trans_table, trans_mean, trans_std, bal_unbal_table, bu_mean, bu_std, bal2bal_mean, unbal2bal_mean
 end
 export performSimulationRepetitions
 
