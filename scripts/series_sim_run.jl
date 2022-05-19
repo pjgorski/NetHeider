@@ -43,7 +43,7 @@ for (i, dict) in enumerate(dicts)
     
     balanced_table, balanced_mean, balanced_std, last_val, last_std, 
         trans_table, trans_mean, trans_std, bal_unbal_table, bu_mean, bu_std, bal2bal_mean, unbal2bal_mean = 
-        performSimulationRepetitions(params; p = p, savefolder = ["data", "sims"])
+        performSimulationRepetitions(params; p = p, savefolder = ["data", "sims2"])
 
     if time() - curtime > params.inform_after
         global curtime = time()

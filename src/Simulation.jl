@@ -89,6 +89,7 @@ function single_update(params::Params, attr::Matrix{Float64}, signs::Matrix{Floa
                 attr[agent_1, attr_ind] = rand(possible_new_vals)
                 signs = sign.(Symmetric(get_attribute_layer_weights(params.attr, attr)))
                 signs[signs .== 0.] .= 1
+                signs[diagind(signs)] .= 0.
             end
 
             if !are_attributes_correct(params.attr, attr)
@@ -192,11 +193,11 @@ function add_edges!(net, params::Params;
 end
 export add_edges!
 
-# p = (attr=zeros(params.N, params.attr.g), signs=zeros(params.N, params.N), signs_old = zeros(params.N, params.N), new_attr=zeros(params.N, params.attr.g), hlp=zeros(params.N, params.N), adj_mat=Matrix(adjacency_matrix(net, Float64)))
+# p = (attr=zeros(params.N, params.attr.g), signs=zeros(params.N, params.N), signs_init = zeros(params.N, params.N), new_attr=zeros(params.N, params.attr.g), hlp=zeros(params.N, params.N), adj_mat=Matrix(adjacency_matrix(net, Float64)))
 # res = (balanced = zeros(Int(ceil(params.step_max / params.measure_balance_every_step))), triad_trans = zeros(Int(ceil(params.step_max / params.measure_balance_every_step)), 4, 4), bal_unbal = zeros(Int(ceil(params.step_max / params.measure_balance_every_step)), 2, 2))
 function performSimulation!(res, params::Params, net=generate_network_structure(params); triads = [],
     p=(attr=zeros(params.N, params.attr.g),
-        signs=zeros(params.N, params.N), signs_old = zeros(params.N, params.N), new_attr=zeros(params.N, params.attr.g),
+        signs=zeros(params.N, params.N), signs_init = zeros(params.N, params.N), new_attr=zeros(params.N, params.attr.g),
         hlp=zeros(params.N, params.N), adj_mat = zeros(params.N, params.N))
 )
     if isempty(triads) 
@@ -205,7 +206,7 @@ function performSimulation!(res, params::Params, net=generate_network_structure(
     if isempty(p.adj_mat)
         p.adj_mat .= Matrix(adjacency_matrix(net, Float64))
     end
-    attr, signs, signs_old, new_attr, hlp, adj_mat = p
+    attr, signs, signs_init, new_attr, hlp, adj_mat = p
     
     #generate attributes
     if params.net_str == "NetSense"
@@ -218,13 +219,16 @@ function performSimulation!(res, params::Params, net=generate_network_structure(
     #generate signed connections (Jij)
     signs .= sign.(Symmetric(get_attribute_layer_weights(params.attr, attr)))
     signs[signs .== 0.] .= 1
+    signs[diagind(signs)] .= 0.
 
     new_attr .= attr
 
     #prepare result tables
     # balanced = zeros(Int(ceil(params.step_max / params.measure_balance_every_step)))
-    signs_old .= copy(signs)
-    triads_old = copy(triads)
+    # signs_old .= copy(signs)
+    # triads_old = copy(triads)
+    triads_init = copy(triads)
+    signs_init .= copy(signs)
 
     measure_balance_counter = 1
     measure_balance_index = 1
@@ -247,10 +251,20 @@ function performSimulation!(res, params::Params, net=generate_network_structure(
             adj_mat .= Matrix(adjacency_matrix(net, Float64))
             res.balanced[measure_balance_index] = get_balanced_ratio_not_complete(signs .* adj_mat, adj_mat; hlp=hlp)
 
+            # (balanced = bal_row, signs_row = signs_row, triads_row = triads_row, links_row = links_row, triads_num = triads_num)
+
+            res.signs_row[measure_balance_index, :, :] .= signs
+            res.triads_row[measure_balance_index] = triads
+            res.links_row[measure_balance_index] = net.ne
+            res.triads_num[measure_balance_index] = length(triads)
+
             res.triad_trans[measure_balance_index, :, :], 
-                res.bal_unbal[measure_balance_index, :, :] = calculate_triad_transitions(signs_old, signs, triads_old, triads)
-            signs_old .= copy(signs)
-            triads_old = copy(triads)
+                res.bal_unbal[measure_balance_index, :, :] = calculate_triad_transitions(signs_init, signs, triads_init, triads)
+
+            # res.triad_trans[measure_balance_index, :, :], 
+            #     res.bal_unbal[measure_balance_index, :, :] = calculate_triad_transitions(signs_old, signs, triads_old, triads)
+            # signs_old .= copy(signs)
+            # triads_old = copy(triads)
 
             measure_balance_index += 1
             measure_balance_counter = 1
@@ -261,8 +275,17 @@ function performSimulation!(res, params::Params, net=generate_network_structure(
 
     if measure_balance_index < size(res.balanced, 1)
         res.balanced[measure_balance_index] = get_balanced_ratio_not_complete(signs .* adj_mat, adj_mat; hlp=hlp)
+        # res.triad_trans[measure_balance_index, :, :], 
+        #     res.bal_unbal[measure_balance_index, :, :] = calculate_triad_transitions(signs_old, signs, triads_old, triads)
+
+        res.signs_row[measure_balance_index, :, :] .= signs
+        res.triads_row[measure_balance_index] = triads
+        res.links_row[measure_balance_index] = net.ne
+        res.triads_num[measure_balance_index] = length(triads)
+
         res.triad_trans[measure_balance_index, :, :], 
-            res.bal_unbal[measure_balance_index, :, :] = calculate_triad_transitions(signs_old, signs, triads_old, triads)
+            res.bal_unbal[measure_balance_index, :, :] = calculate_triad_transitions(signs_init, signs, triads_init, triads)
+
         measure_balance_index += 1
     end
 
@@ -296,6 +319,12 @@ function performSimulationRepetitions(params::Params; p=(attr=zeros(params.N, pa
     bu_mean = zeros(Int(ceil(params.step_max / params.measure_balance_every_step)), 2, 2)
     bu_std = zeros(Int(ceil(params.step_max / params.measure_balance_every_step)), 2, 2)
 
+    signs_table = zeros(Int, params.repetitions, Int(ceil(params.step_max / params.measure_balance_every_step)), params.N, params.N)
+    triads_table = Array{Array{Any, 1}, 2}(undef, params.repetitions, Int(ceil(params.step_max / params.measure_balance_every_step)))
+
+    links_num = zeros(Int, params.repetitions, Int(ceil(params.step_max / params.measure_balance_every_step)))
+    triads_num = zeros(Int, params.repetitions, Int(ceil(params.step_max / params.measure_balance_every_step)))
+
     for rep in 1:params.repetitions
         # display("Started " * string(rep))
         net = generate_network_structure(params)
@@ -305,8 +334,14 @@ function performSimulationRepetitions(params::Params; p=(attr=zeros(params.N, pa
         bal_row = @view balanced_table[rep, :]
         trans_row = view(trans_table, rep, :, :, :)
         bal_unbal_row = view(bal_unbal_table, rep, :, :, :)
+        signs_row = view(signs_table, rep, :, :, :)
+        triads_row = view(triads_table, rep, :, :, :)
+        links_row = view(links_num, rep, :)
+        triads_num_row = view(triads_num, rep, :)
 
-        performSimulation!((balanced = bal_row, triad_trans = trans_row, bal_unbal = bal_unbal_row), params, net; p=p)
+        performSimulation!((balanced = bal_row, triad_trans = trans_row, bal_unbal = bal_unbal_row, 
+            signs_row = signs_row, triads_row = triads_row, links_row = links_row, triads_num = triads_num_row), 
+            params, net; p=p)
     end
 
     balanced_mean .= mean(balanced_table, dims=1)[:]
@@ -325,7 +360,7 @@ function performSimulationRepetitions(params::Params; p=(attr=zeros(params.N, pa
     last_std = balanced_std[end]
 
     threshold = params.attr.threshold
-    what_to_save = @strdict params threshold balanced_table balanced_mean balanced_std last_val last_std trans_table trans_mean trans_std bal_unbal_table bu_mean bu_std bal2bal_mean unbal2bal_mean
+    what_to_save = @strdict params threshold signs_table triads_table links_num triads_num balanced_table balanced_mean balanced_std last_val last_std trans_table trans_mean trans_std bal_unbal_table bu_mean bu_std bal2bal_mean unbal2bal_mean
     for field in fieldnames(typeof(params))
         val = getfield(params, field)
         what_to_save[String(field)] = val

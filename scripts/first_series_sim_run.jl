@@ -9,7 +9,7 @@ using Plots
 pns = [0:0.1:1...]
 
 th = 0.3
-params = Params(; net_str = "NetSense", attr_params = [8, th, 3])
+params = Params(; net_str = "NetSense", attr_params = [8, th, 3], repetitions = 10)
 net = NetHeider.generate_network_structure(params)
 
 p= (attr=zeros(params.N, params.attr.g),
