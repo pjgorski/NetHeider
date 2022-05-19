@@ -5,7 +5,7 @@ import Dates
 using NetHeider
 using LightGraphs
 
-using Plots
+# using Plots
 
 pns = [0:0.2:1...]
 ths = [0:15...] ./ 16
@@ -25,7 +25,7 @@ p= (attr=zeros(params.N, params.attr.g),
 strdicts = @strdict pns ths padds pclose_triads prs
 dicts = dict_list(strdicts)
 
-vals = similar(pns)
+# vals = similar(pns)
 
 curtime = time()
 for (i, dict) in enumerate(dicts)
@@ -46,7 +46,7 @@ for (i, dict) in enumerate(dicts)
         performSimulationRepetitions(params; p = p, savefolder = ["data", "sims"])
 
     if time() - curtime > params.inform_after
-        curtime = time()
+        global curtime = time()
 
         cur_date = Dates.now()
 

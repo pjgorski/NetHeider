@@ -88,6 +88,7 @@ function single_update(params::Params, attr::Matrix{Float64}, signs::Matrix{Floa
 
             attr[agent_1, attr_ind] = rand(possible_new_vals)
             signs = sign.(Symmetric(get_attribute_layer_weights(params.attr, attr)))
+            signs[signs .== 0.] .= 1
 
             if !are_attributes_correct(params.attr, attr)
                 display(attr)
@@ -215,6 +216,7 @@ function performSimulation!(res, params::Params, net=generate_network_structure(
 
     #generate signed connections (Jij)
     signs .= sign.(Symmetric(get_attribute_layer_weights(params.attr, attr)))
+    signs[signs .== 0.] .= 1
 
     new_attr .= attr
 
