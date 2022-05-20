@@ -42,7 +42,7 @@ for (i, dict) in enumerate(dicts)
     params.pr_neg = pr
     
     balanced_table, balanced_mean, balanced_std, last_val, last_std, 
-        trans_table, trans_mean, trans_std, bal_unbal_table, bu_mean, bu_std, bal2bal_mean, unbal2bal_mean = 
+        trans_table, trans_mean, trans_std, bal_unbal_table, bu_mean, bu_std, bal2bal_mean, unbal2bal_mean, links_num, triads_num = 
         performSimulationRepetitions(params; p = p, savefolder = ["data", "sims2"])
 
     if time() - curtime > params.inform_after

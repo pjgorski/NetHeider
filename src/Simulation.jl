@@ -238,12 +238,20 @@ function performSimulation!(res, params::Params, net=generate_network_structure(
         #update triad
         # print("u")
         # print(net.ne)
-        attr, signs, triads, net, was_triad_balanced = single_update(params, attr, signs, triads, net)
+        try
+            attr, signs, triads, net, was_triad_balanced = single_update(params, attr, signs, triads, net)
         # print("a")
-        if params.const_rate_flag || !was_triad_balanced
-            #add a link with rate padd
-            params.add_edges(net, params; hlp=p)
-            triads = get_undir_triads(net)
+            if params.const_rate_flag || !was_triad_balanced
+                #add a link with rate padd
+                params.add_edges(net, params; hlp=p)
+                triads = get_undir_triads(net)
+            end
+        catch e
+            display(savename(params))
+            display(length(triads))
+            display(net)
+            display(i)
+            error(e)
         end
 
         if measure_balance_counter >= params.measure_balance_every_step
@@ -388,7 +396,7 @@ function performSimulationRepetitions(params::Params; p=(attr=zeros(params.N, pa
         what_to_save
     )
 
-    return balanced_table, balanced_mean, balanced_std, last_val, last_std, trans_table, trans_mean, trans_std, bal_unbal_table, bu_mean, bu_std, bal2bal_mean, unbal2bal_mean
+    return balanced_table, balanced_mean, balanced_std, last_val, last_std, trans_table, trans_mean, trans_std, bal_unbal_table, bu_mean, bu_std, bal2bal_mean, unbal2bal_mean, links_num, triads_num
 end
 export performSimulationRepetitions
 
