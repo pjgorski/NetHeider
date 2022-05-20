@@ -5,7 +5,7 @@ using LightGraphs
 
 DrWatson.default_prefix(params::Params) = "Experiment_" * string(params.date)
 DrWatson.default_allowed(::Params) = (Real, String, AbstractAttributes)
-DrWatson.allaccess(::Params) = (:attr, :N, :pr_neg, :pr_pos, :padd, :pn, :net_str)
+DrWatson.allaccess(::Params) = (:attr, :N, :pr_neg, :pr_pos, :padd, :pn, :pclose_triad, :net_str)
 
 function single_update(params::Params, attr::Matrix{Float64}, signs::Matrix{Float64}, triads, net)
     if length(triads) == 0
@@ -253,8 +253,12 @@ function performSimulation!(res, params::Params, net=generate_network_structure(
 
             # (balanced = bal_row, signs_row = signs_row, triads_row = triads_row, links_row = links_row, triads_num = triads_num)
 
-            res.signs_row[measure_balance_index, :, :] .= signs
-            res.triads_row[measure_balance_index] = triads
+            if !isempty(res.signs_row)
+                res.signs_row[measure_balance_index, :, :] .= signs
+            end
+            if !isempty(res.triads_row)
+                res.triads_row[measure_balance_index] = triads
+            end
             res.links_row[measure_balance_index] = net.ne
             res.triads_num[measure_balance_index] = length(triads)
 
@@ -278,8 +282,14 @@ function performSimulation!(res, params::Params, net=generate_network_structure(
         # res.triad_trans[measure_balance_index, :, :], 
         #     res.bal_unbal[measure_balance_index, :, :] = calculate_triad_transitions(signs_old, signs, triads_old, triads)
 
-        res.signs_row[measure_balance_index, :, :] .= signs
-        res.triads_row[measure_balance_index] = triads
+        # res.signs_row[measure_balance_index, :, :] .= signs
+        # res.triads_row[measure_balance_index] = triads
+        if !isempty(res.signs_row)
+            res.signs_row[measure_balance_index, :, :] .= signs
+        end
+        if !isempty(res.triads_row)
+            res.triads_row[measure_balance_index] = triads
+        end
         res.links_row[measure_balance_index] = net.ne
         res.triads_num[measure_balance_index] = length(triads)
 
@@ -319,8 +329,8 @@ function performSimulationRepetitions(params::Params; p=(attr=zeros(params.N, pa
     bu_mean = zeros(Int(ceil(params.step_max / params.measure_balance_every_step)), 2, 2)
     bu_std = zeros(Int(ceil(params.step_max / params.measure_balance_every_step)), 2, 2)
 
-    signs_table = zeros(Int, params.repetitions, Int(ceil(params.step_max / params.measure_balance_every_step)), params.N, params.N)
-    triads_table = Array{Array{Any, 1}, 2}(undef, params.repetitions, Int(ceil(params.step_max / params.measure_balance_every_step)))
+    # signs_table = zeros(Int, params.repetitions, Int(ceil(params.step_max / params.measure_balance_every_step)), params.N, params.N)
+    # triads_table = Array{Array{Any, 1}, 2}(undef, params.repetitions, Int(ceil(params.step_max / params.measure_balance_every_step)))
 
     links_num = zeros(Int, params.repetitions, Int(ceil(params.step_max / params.measure_balance_every_step)))
     triads_num = zeros(Int, params.repetitions, Int(ceil(params.step_max / params.measure_balance_every_step)))
@@ -334,8 +344,10 @@ function performSimulationRepetitions(params::Params; p=(attr=zeros(params.N, pa
         bal_row = @view balanced_table[rep, :]
         trans_row = view(trans_table, rep, :, :, :)
         bal_unbal_row = view(bal_unbal_table, rep, :, :, :)
-        signs_row = view(signs_table, rep, :, :, :)
-        triads_row = view(triads_table, rep, :, :, :)
+        # signs_row = view(signs_table, rep, :, :, :)
+        # triads_row = view(triads_table, rep, :, :, :)
+        signs_row = []
+        triads_row = []
         links_row = view(links_num, rep, :)
         triads_num_row = view(triads_num, rep, :)
 
@@ -360,7 +372,7 @@ function performSimulationRepetitions(params::Params; p=(attr=zeros(params.N, pa
     last_std = balanced_std[end]
 
     threshold = params.attr.threshold
-    what_to_save = @strdict params threshold signs_table triads_table links_num triads_num balanced_table balanced_mean balanced_std last_val last_std trans_table trans_mean trans_std bal_unbal_table bu_mean bu_std bal2bal_mean unbal2bal_mean
+    what_to_save = @strdict params threshold links_num triads_num balanced_table balanced_mean balanced_std last_val last_std trans_table trans_mean trans_std bal_unbal_table bu_mean bu_std bal2bal_mean unbal2bal_mean
     for field in fieldnames(typeof(params))
         val = getfield(params, field)
         what_to_save[String(field)] = val
