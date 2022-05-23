@@ -9,7 +9,7 @@ DrWatson.allaccess(::Params) = (:attr, :N, :pr_neg, :pr_pos, :padd, :pn, :pclose
 
 function single_update(params::Params, attr::Matrix{Float64}, signs::Matrix{Float64}, triads, net)
     if length(triads) == 0
-        return attr, signs, triads
+        return attr, signs, triads, net, true
     end
     #choose triad
     triad = rand(triads)
