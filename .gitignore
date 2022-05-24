@@ -11,6 +11,8 @@ test/*.csv
 test/sims2
 data/sims2/*
 data/sims3/*
+data/sims4/*
+data/sims5/*.jld2
 
 ################################################################################
 #                                    Julia                                     #
