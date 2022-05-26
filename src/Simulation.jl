@@ -166,10 +166,10 @@ function add_single_edge2!(net, params::Params;
                     chosen_edge = rand(1:params.N, 2)
                 end
             end
-            add_edge!(net, chosen_edge...)
-
-            hlp.adj_mat .= Matrix(adjacency_matrix(net, Float64))
         end
+        add_edge!(net, chosen_edge...)
+
+        hlp.adj_mat .= Matrix(adjacency_matrix(net, Float64))
     end
 end
 export add_single_edge2!

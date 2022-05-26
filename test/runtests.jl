@@ -23,6 +23,19 @@ function initialize_attr()
     return params, attr, signs, triads, net
 end
 
+function initialize_netsense_attr()
+    params = Params(; net_str = "NetSense", attr_params = [8, 0, 3])
+    attr = deepcopy(NetHeider.netSenseAttributes)
+    signs = sign.(Symmetric(get_attribute_layer_weights(params.attr, attr)))
+    signs[signs .== 0.] .= 1
+    signs[diagind(signs)] .= 0.
+
+    net = NetHeider.generate_network_structure(params)
+    triads = get_undir_triads(net)
+
+    return params, attr, signs, triads, net
+end
+
 @testset "Triad update tests" begin
     @testset "removing link" begin
         params, attr, signs, triads, net = initialize_attr()
@@ -118,6 +131,28 @@ end
         NetHeider.add_edges!(net, params)
 
         @test net == cmpl
+    end
+
+    @testset "adding a triad" begin
+        params, attr, signs, triads, net = initialize_netsense_attr()
+
+        net_copy = deepcopy(net)
+        params.padd = 1.
+        for _ in 1:10
+            NetHeider.add_single_edge2!(net_copy, params)
+        end
+        triads2 = get_undir_triads(net_copy)
+
+        net_copy = deepcopy(net)
+        params.padd = 1.
+        params.pclose_triad = 1.
+        for _ in 1:10
+            NetHeider.add_single_edge2!(net_copy, params)
+        end
+        triads3 = get_undir_triads(net_copy)
+
+        @test length(triads3) > length(triads2)
+
     end
 end
 
