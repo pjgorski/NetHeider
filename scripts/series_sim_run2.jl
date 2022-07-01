@@ -15,7 +15,7 @@ pclose_triads = [0,0.35]
 # pr_poss = [0:0.1:1...]
 prs = [0.05:0.05:0.3...]
 
-params = Params(; net_str = "NetSense", attr_params = [8, 0, 3], const_rate_flag = true, repetitions = 10, inform_after = 3600)
+params = Params(; net_str = "NetSense", attr_params = [8, 0, 3], const_rate_flag = true, repetitions = 10, inform_after = 3600, measure_balance_every_step = 5)
 net = NetHeider.generate_network_structure(params)
 
 p= (attr=zeros(params.N, params.attr.g),
