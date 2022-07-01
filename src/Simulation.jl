@@ -330,12 +330,12 @@ function performSimulationRepetitions(params::Params; p=(attr=zeros(params.N, pa
     balanced_mean = zeros(Int(ceil(params.step_max / params.measure_balance_every_step)))
     balanced_std = zeros(Int(ceil(params.step_max / params.measure_balance_every_step)))
 
-    trans_table = zeros(params.repetitions, Int(ceil(params.step_max / params.measure_balance_every_step)), 4, 4)
-    bal_unbal_table = zeros(params.repetitions, Int(ceil(params.step_max / params.measure_balance_every_step)), 2, 2)
-    trans_mean = zeros(Int(ceil(params.step_max / params.measure_balance_every_step)), 4, 4)
-    trans_std = zeros(Int(ceil(params.step_max / params.measure_balance_every_step)), 4, 4)
-    bu_mean = zeros(Int(ceil(params.step_max / params.measure_balance_every_step)), 2, 2)
-    bu_std = zeros(Int(ceil(params.step_max / params.measure_balance_every_step)), 2, 2)
+    trans_table = zeros(params.repetitions, Int(ceil(params.step_max / params.measure_balance_every_step)), 5, 5)
+    bal_unbal_table = zeros(params.repetitions, Int(ceil(params.step_max / params.measure_balance_every_step)), 3, 3)
+    trans_mean = zeros(Int(ceil(params.step_max / params.measure_balance_every_step)), 5, 5)
+    trans_std = zeros(Int(ceil(params.step_max / params.measure_balance_every_step)), 5, 5)
+    bu_mean = zeros(Int(ceil(params.step_max / params.measure_balance_every_step)), 3, 3)
+    bu_std = zeros(Int(ceil(params.step_max / params.measure_balance_every_step)), 3, 3)
 
     # signs_table = zeros(Int, params.repetitions, Int(ceil(params.step_max / params.measure_balance_every_step)), params.N, params.N)
     # triads_table = Array{Array{Any, 1}, 2}(undef, params.repetitions, Int(ceil(params.step_max / params.measure_balance_every_step)))
@@ -373,14 +373,21 @@ function performSimulationRepetitions(params::Params; p=(attr=zeros(params.N, pa
     bu_mean .= mean(bal_unbal_table, dims=1)[1,:,:,:]
     bu_std .= std(bal_unbal_table, dims=1)[1,:,:,:]
 
-    bal2bal_mean = bu_mean[:,1,1] ./ sum(bu_mean[:,1,:], dims=2)
-    unbal2bal_mean = bu_mean[:,2,1] ./ sum(bu_mean[:,2,:], dims=2)
+    bal2bal_mean = bu_mean[:,1,1] ./ sum(bu_mean[:,1,1:2], dims=2)
+    unbal2bal_mean = bu_mean[:,2,1] ./ sum(bu_mean[:,2,1:2], dims=2)
+
+    bal2bal_mean2 = bu_mean[:,1,1] ./ sum(bu_mean[:,1,:], dims=2)
+    bal2unbal_mean2 = bu_mean[:,1,2] ./ sum(bu_mean[:,1,:], dims=2)
+    bal2not_mean2 = bu_mean[:,1,3] ./ sum(bu_mean[:,1,:], dims=2)
+    unbal2bal_mean2 = bu_mean[:,2,1] ./ sum(bu_mean[:,2,:], dims=2)
+    unbal2unbal_mean2 = bu_mean[:,2,2] ./ sum(bu_mean[:,2,:], dims=2)
+    unbal2not_mean2 = bu_mean[:,2,3] ./ sum(bu_mean[:,2,:], dims=2)
 
     last_val = balanced_mean[end]
     last_std = balanced_std[end]
 
     threshold = get_threshold(params.attr)
-    what_to_save = @strdict params threshold links_num triads_num balanced_table balanced_mean balanced_std last_val last_std trans_table trans_mean trans_std bal_unbal_table bu_mean bu_std bal2bal_mean unbal2bal_mean
+    what_to_save = @strdict params threshold links_num triads_num balanced_table balanced_mean balanced_std last_val last_std trans_table trans_mean trans_std bal_unbal_table bu_mean bu_std bal2bal_mean unbal2bal_mean bal2bal_mean2 bal2unbal_mean2 bal2not_mean2 unbal2bal_mean2 unbal2unbal_mean2 unbal2not_mean2
     for field in fieldnames(typeof(params))
         val = getfield(params, field)
         what_to_save[String(field)] = val

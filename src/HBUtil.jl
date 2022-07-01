@@ -165,13 +165,13 @@ export get_correlation
 # Returns: 
 # * transition Matrix Delta[i,j] indicates the number of times triad of type (i-1) became a triad of type (j-1)
 # * transition Matrix of (balanced, unbalanced). 
+# Returns two Arrays. 
+# First - balanced (1), unbalanced (2) or lack of triad (3). 
+# Second - triad_type (0-3) or lack of triad (4). 
 function calculate_triad_transitions(xs_old::Matrix{Float64}, xs_new::Matrix{Float64}, triads_old, triads_new) 
-    Deltas = zeros(4,4)
-    bal_unbal = zeros(2,2)
-    for triad in triads_old
-        if !(triad in triads_new)
-            continue
-        end
+    Deltas = zeros(5,5)
+    bal_unbal = zeros(3,3)
+    for triad in unique([triads_old..., triads_new...])
         triad_links_inds = ((triad[1], triad[2]), (triad[2], triad[3]), (triad[3], triad[1]))
         triad_links_old = [xs_old[inds...] for inds in triad_links_inds]
         triad_links_new = [xs_new[inds...] for inds in triad_links_inds]
@@ -179,17 +179,27 @@ function calculate_triad_transitions(xs_old::Matrix{Float64}, xs_new::Matrix{Flo
         is_balanced_old_ind = prod(triad_links_old) > 0 ? 1 : 2
         is_balanced_new_ind = prod(triad_links_new) > 0 ? 1 : 2
 
-        bal_unbal[is_balanced_old_ind, is_balanced_new_ind] += 1
-
         negs_old_ind = sum(triad_links_old .== -1) + 1
         negs_new_ind = sum(triad_links_new .== -1) + 1
 
+        if !(triad in triads_new)
+            is_balanced_new_ind = 3
+            negs_new_ind = 5
+        end
+        if !(triad in triads_old)
+            is_balanced_old_ind = 3
+            negs_old_ind = 5
+        end
+
+        bal_unbal[is_balanced_old_ind, is_balanced_new_ind] += 1
         Deltas[negs_old_ind, negs_new_ind] += 1
     end
 
     return Deltas, bal_unbal
 end
 export calculate_triad_transitions
+
+
 
 
 # # Returns: 

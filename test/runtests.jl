@@ -228,8 +228,8 @@ end
 
         type_trans, bal_unbal = NetHeider.calculate_triad_transitions(signs_old, signs, triads_old, triads)
 
-        @test sum(abs.(type_trans)) == 0
-        @test sum(abs.(bal_unbal)) == 0
+        @test sum(abs.(type_trans[1:4,1:4])) == 0
+        @test sum(abs.(bal_unbal[1:2,1:2])) == 0
     end
 
     @testset "triad appears" begin
@@ -254,8 +254,8 @@ end
 
         type_trans, bal_unbal = NetHeider.calculate_triad_transitions(signs_old, signs, triads_old, triads)
 
-        @test sum(abs.(type_trans)) == 0
-        @test sum(abs.(bal_unbal)) == 0
+        @test sum(abs.(type_trans[1:4,1:4])) == 0
+        @test sum(abs.(bal_unbal[1:2,1:2])) == 0
     end
 end
 
