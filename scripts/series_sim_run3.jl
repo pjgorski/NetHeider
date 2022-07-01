@@ -15,7 +15,8 @@ pclose_triads = [0, 0.35]
 # pr_poss = [0:0.1:1...]
 prs = [0:0.05:0.3...]
 
-params = Params(; net_str = "NetSense", attr_params = [8, 0, 3], const_rate_flag = false, repetitions = 10, inform_after = 3600)
+params = Params(; net_str = "NetSense", attr_params = [8, 0, 3], const_rate_flag = false, repetitions = 10, inform_after = 3600, 
+    measure_balance_every_step = 5, step_max = 400)
 net = NetHeider.generate_network_structure(params)
 
 p= (attr=zeros(params.N, params.attr.g),
@@ -43,7 +44,7 @@ for (i, dict) in enumerate(dicts)
     
     balanced_table, balanced_mean, balanced_std, last_val, last_std, 
         trans_table, trans_mean, trans_std, bal_unbal_table, bu_mean, bu_std, bal2bal_mean, unbal2bal_mean, links_num, triads_num = 
-        performSimulationRepetitions(params; p = p, savefolder = ["data", "sims_add_unbalanced"])
+        performSimulationRepetitions(params; p = p, savefolder = ["data", "sims_add_unbalanced2"])
 
     if time() - curtime > params.inform_after
         global curtime = time()
