@@ -30,7 +30,7 @@ const netSenseFile = begin
     file
 end
 
-const netSenseNetwork, netSenseAttributes = begin
+const netSenseNetworks, netSenseAttributes_s = begin
     py"""
     import networkx as nx
     def get_triads(net):
@@ -56,8 +56,8 @@ const netSenseNetwork, netSenseAttributes = begin
     get_triads = py"get_triads"
     get_adjacency_matrix = py"get_adjacency_matrix"
 
-    A = get_adjacency_matrix(netSenseFile[1])
-    net = LightGraphs.Graph(A)
+    As = [get_adjacency_matrix(netSenseFile[i]) for i in 1:6]
+    net = [LightGraphs.Graph(As[i]) for i in 1:6]
 
     #creating list of attributes
     list_of_attributes = Set([k for n in netSenseFile[1].nodes for k in keys(netSenseFile[1].nodes[n+1])])
@@ -74,11 +74,13 @@ const netSenseNetwork, netSenseAttributes = begin
         end
     end
 
-    net, ord_attributes[1]
+    net, ord_attributes
 end
 
-function generate_NetSenseNetwork()
-    return copy(netSenseNetwork)
+const netSenseNetwork, netSenseAttributes = netSenseNetworks[1], netSenseAttributes_s[1]
+
+function generate_NetSenseNetwork(; sem = 1)
+    return copy(netSenseNetworks[sem])
 end
 
 function generate_network_structure(params::Params)
@@ -87,9 +89,17 @@ function generate_network_structure(params::Params)
     elseif params.net_str == "ring"
         return generate_ring_network(params.N, params.net_str_param)
     elseif params.net_str == "NetSense"
-        params.N = length(netSenseNetwork.fadjlist)
+        
+        if isempty(params.net_str_param) || params.net_str_param == 0
+            sem = 1
+        else sem = params.net_str_param
+        end
+        net = generate_NetSenseNetwork(; sem = sem)
+
+        params.N = length(net.fadjlist)
         params.attr = OrderedAttributes(8, params.attr.threshold, 3)
-        return generate_NetSenseNetwork()
+        
+        return net
     end
 end
 export generate_network_structure

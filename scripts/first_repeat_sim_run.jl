@@ -7,6 +7,7 @@ using LightGraphs
 # using Plots
 th = 0.3
 params = Params(; net_str = "NetSense", attr_params = [8, th, 3])
+params.net_str_param = 3
 net = NetHeider.generate_network_structure(params)
 
 p= (attr=zeros(params.N, params.attr.g),

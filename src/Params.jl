@@ -14,7 +14,7 @@ mutable struct Params <: AbstractParams
     "Network structure (possible ones: complete, ring, NetSense)"
     net_str::String
 
-    "Parameter of network structure. For ring network it is the number of nearest neighbors"
+    "Parameter of network structure. For ring network it is the number of nearest neighbors. For NetSense dataset it will be the starting semester."
     net_str_param::Int
 
     "Dynamics parameter rewiring or changing attribute for negative links"

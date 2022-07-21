@@ -210,7 +210,11 @@ function performSimulation!(res, params::Params, net=generate_network_structure(
     
     #generate attributes
     if params.net_str == "NetSense"
-        attr .= NetHeider.netSenseAttributes
+        if isempty(params.net_str_param) || params.net_str_param == 0
+            attr .= NetHeider.netSenseAttributes
+        else
+            attr .= NetHeider.netSenseAttributes_s[params.net_str_param]
+        end
     else
         attr .= get_attributes(params.attr, params.N)
     end
