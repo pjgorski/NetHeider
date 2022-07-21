@@ -7,7 +7,8 @@ using LightGraphs
 
 # using Plots
 
-pns = [0:0.2:1...]
+# pns = [0:0.2:1...]
+pns = [0.3, 1/3, 0.5, 5/9, 5/7, 0.7]
 ths = [0:15...] ./ 16
 padds = [0.01:0.04:0.2...]
 pclose_triads = [0, 0.35]
