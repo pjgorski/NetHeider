@@ -51,6 +51,14 @@ function calc_error(b2b1, u2b1, b2b2, u2b2; method = "mse")
         return calc_error(b2b1[4:end], u2b1[4:end], b2b2[4:end], u2b2[4:end]; method = "mse")
     elseif method == "mae_notbeg"
         return calc_error(b2b1[4:end], u2b1[4:end], b2b2[4:end], u2b2[4:end]; method = "mae")
+    elseif method == "T--_mse_notbeg"
+        return calc_error(0, u2b1[4:end], 0, u2b2[4:end]; method = "mse")
+    elseif method == "T--_mae_notbeg"
+        return calc_error(0, u2b1[4:end], 0, u2b2[4:end]; method = "mae")
+    elseif method == "mse_manyT"
+        return calc_error(b2b1[4:end], u2b1[1:end-4], b2b2[4:end], u2b2[1:end-4]; method = "mse")
+    elseif method == "mae_manyT"
+        return calc_error(b2b1[4:end], u2b1[1:end-4], b2b2[4:end], u2b2[1:end-4]; method = "mae")
     end
 
     return error
@@ -73,4 +81,9 @@ function plot_dict(dicts, df, param_ind)
     title!(p1, "steps="*string(10*time_ind))
     
     return p1
+end
+
+function show_res(df::DataFrame, dicts, num)
+    display(string(dicts[results_df[num, :dict_ind]]))
+    display(string(results_df[num, :time_ind]*5))
 end

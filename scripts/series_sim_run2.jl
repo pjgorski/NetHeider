@@ -8,15 +8,15 @@ using LightGraphs
 # using Plots
 
 # pns = [0:0.2:1...]
-pns = [0.3, 1/3, 0.5, 5/9, 5/7, 0.7]
+pns = [0.4]
 ths = [0:15...] ./ 16
 padds = [0.01:0.02:0.1...]
-pclose_triads = [0,0.35]
+pclose_triads = [0]
 # pr_negs = [0:0.1:1...] 
 # pr_poss = [0:0.1:1...]
 prs = [0.05:0.05:0.3...]
 
-params = Params(; net_str = "NetSense", attr_params = [8, 0, 3], const_rate_flag = true, repetitions = 10, inform_after = 3600, 
+params = Params(; net_str = "NetSense", attr_params = [8, 0, 3], const_rate_flag = true, repetitions = 100, inform_after = 3600, 
     measure_balance_every_step = 5, step_max = 400)
 net = NetHeider.generate_network_structure(params)
 
@@ -45,7 +45,7 @@ for (i, dict) in enumerate(dicts)
     
     balanced_table, balanced_mean, balanced_std, last_val, last_std, 
         trans_table, trans_mean, trans_std, bal_unbal_table, bu_mean, bu_std, bal2bal_mean, unbal2bal_mean, links_num, triads_num = 
-        performSimulationRepetitions(params; p = p, savefolder = ["data", "sims7"])
+        performSimulationRepetitions(params; p = p, savefolder = ["data", "sims8"])
 
     if time() - curtime > params.inform_after
         global curtime = time()
