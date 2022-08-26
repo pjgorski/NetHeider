@@ -4,10 +4,10 @@ using DataFrames
 using NetHeider
 using JLD2
 
-foldername = "sims_add_unbalanced2"
+foldername = "sims8"
 res = collect_results(datadir(foldername); black_list = ["trans_table", "trans_mean", "trans_std"], rinclude = [r"Experiment*"])
 
-fname = datadir(foldername, "collected_results2.jld2")
+fname = datadir(foldername, "collected_results.jld2")
 jldopen(fname, "w") do file
     file["res"] = res
 end
