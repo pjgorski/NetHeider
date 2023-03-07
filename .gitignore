@@ -15,6 +15,7 @@ data/sims4/*
 data/sims5/*.jld2
 data/sims6/*.jld2
 data/*/*.jld2
+data/exp_pro/NetSense_network.pkl
 
 ################################################################################
 #                                    Julia                                     #
