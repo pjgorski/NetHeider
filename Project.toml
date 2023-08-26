@@ -2,6 +2,7 @@ name = "NetHeider"
 authors = ["Piotr J Górski"]
 
 [deps]
+DataFrames = "a93c6f00-e57d-5684-b7b6-d8193f3e46c0"
 Dates = "ade2ca70-3891-5945-98fb-dc099432e06a"
 DrWatson = "634d3b9d-ee7a-5ddf-bec9-22491ea816e1"
 LightGraphs = "093fc24a-ae57-5d10-9952-331d41423f4d"
@@ -13,3 +14,4 @@ StatsBase = "2913bbd2-ae8a-5f71-8c99-4fb6c76f3a91"
 [compat]
 DrWatson = "2.9.0"
 julia = "1.6.4"
+DataFrames = "1.3.6"
